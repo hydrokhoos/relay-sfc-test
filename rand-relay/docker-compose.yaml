@@ -1,0 +1,36 @@
+services:
+  ipfs:
+    image: ipfs/kubo
+    volumes:
+      - ./swarm.key:/data/ipfs/swarm.key
+    restart: always
+    ports:
+      - 4001:4001
+
+  ndn:
+    image: hydrokhoos/ndn-all
+    volumes:
+      - share-vol:/vol
+      - .:/src
+    restart: always
+    environment:
+      - SERVICE_NAME=rand-relay
+      - SHARE_PATH=/vol
+      - TCP_MESSAGE_PORT=1234
+      - NDN_CLIENT_TRANSPORT=tcp4://172.16.232.85:6363
+    command: bash -c "pip install -r /src/requirements.txt && ndnsec key-gen /$$SERVICE_NAME | ndnsec cert-install - && python3 /src/ndnsfc.py"  # only NDN
+    # command: bash -c "pip install -r /src/requirements.txt && ndnsec key-gen /$$SERVICE_NAME | ndnsec cert-install - && python3 /src/sfcg.py"  # use IPFS
+
+  service:
+    image: python
+    volumes:
+     - share-vol:/vol
+     - .:/src
+    restart: always
+    environment:
+      - SHARE_PATH=/vol
+      - TCP_MESSAGE_PORT=1234
+    command: bash -c "pip install -r /src/requirements.txt && python3 /src/service.py"
+
+volumes:
+  share-vol:
